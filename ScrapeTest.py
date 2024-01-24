@@ -20,14 +20,19 @@ res.raise_for_status()
 
 page=bs4.BeautifulSoup(res.text, 'html.parser')
 '''
-testFile = open('Face To Face Games Buylist.html')
+testFile = open('Face To Face Games Buylist.html')      
 page=bs4.BeautifulSoup(testFile.read(), 'html.parser')
 
-#cardList=page.select('.product')
-#print(type(cardList))
-
-# Brute Force
-characteristics=['.card-name', '.card-set', '.card-condition', '.card-finish', '.price--withoutTax']
-
-#nameList=page.select('.card-name')
-#setList=page.select()
+buyListOptions=[]
+'''
+Each card inside the cardlist is an <li> tag containing the card's information
+Although I'm not a fan of how hard coded the find function is at the moment, it's the best prototype at the moment to successfully grab 
+the values we want.
+'''
+cardList=page.select('.product')
+for card in cardList:
+    cardSet=card.find('p', {'class':'card-set'}).text
+    cardPrice=float(card.find('span', {'class':'price--withoutTax'}).text.replace('$',''))  #think about setting to 2 decimal places
+    
+    # Testing BuyListObject <-- consider renaming since it's early
+    

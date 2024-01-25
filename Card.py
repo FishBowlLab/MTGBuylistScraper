@@ -20,4 +20,4 @@ class Card:
         Returns:
             List of strings containing all the attributes of the card
         """
-        return [self.name, self.set, self.condition, self.finish, str(self.price)]
+        return [self.name, self.set, self.condition, self.finish, str(round(self.price, 2))]

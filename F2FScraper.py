@@ -17,10 +17,9 @@ class F2FScraper:
                         },
                         'price': {
                             'tag': 'span',
-                            'class': 'price--withoutTax'
+                            'class': 'price price--withoutTax'
                         }
                     }
-    
     def generate_url(self, cardName:str):
         cardName = cardName.lower().replace(' ','%20')
         return 'https://buylist.facetofacegames.com/search.php?search_query={}&section=product'.format(cardName)
@@ -28,7 +27,10 @@ class F2FScraper:
     def delay(self):
         """Sleep function to prevent overloading the site
         """
-        time.sleep(random.randint(500, 2500))
+        delay=random.randint(1500, 4500)/1000
+        print('delaying:', delay, 'seconds')    # Remove after debugging
+        time.sleep(delay)
+        #time.sleep(random.randint(500, 2500))
 
     # How do I specify that cards is a list of card objects in the parameters?
     def exportData(self, cards:list[Card]) -> list[list[str]]: 
@@ -57,10 +59,13 @@ class F2FScraper:
     def scrapeCard(self, cardName):
         # generate URL
         url=self.generate_url(cardName)
-        res=requests.get(url)   # downloads the searched page   
+        print(url)                      # Remove after debugging
+        res=requests.get(url)           # downloads the searched page   
         # Returns an error if there's an issue with the response
         res.raise_for_status()
+        print('Request Successful')     # Remove after debugging
         page=bs4.BeautifulSoup(res.text, 'html.parser')
+        print('bs4 scraping')           # Remove after debugging
  
         '''
         Each card inside the cardlist is an <li> tag containing the card's information
@@ -70,19 +75,29 @@ class F2FScraper:
         cardList=page.select('.product')
         for card in cardList:
             cardSet=card.find(self.fields['set']['tag'], {'class':self.fields['set']['class']}).text
-            cardPrice=float(card.find(self.fields['price']['tag'], {'class':self.fields['price']['class']}).text.replace('$',''))  #think about setting to 2 decimal places
+            
+            # TODO: Fix price scraping
+            # This line needs to be adjusted so it's not scraping a range.
+            # We skipped the float conversion because it was grabbing a range
+            cardPrice=card.find(self.fields['price']['tag'], {'class':self.fields['price']['class']}).text.replace('$','')  
             self.buyListOptions.append(Card(cardName, cardSet, cardPrice))
     
     def scrapeFile(self):
         # loops the scrape card method for all cards inside the file.
         with open(self.setFile, 'r') as file:
             reader=csv.reader(file)
-            next(reader)    # Skips the header fo the file
-            for row in reader:
-                self.scrapeCard(''.join(row))
-                self.delay()
-        self.writeToFile()
+            next(reader)            # Skips the header fo the file
+            print("File Opened")    # Remove after debugging
+            try:
+                for row in reader:
+                    self.scrapeCard(''.join(row))
+                    self.delay()
+            except:
+                print('An error has occured. Writing previously scraped data')
+            finally:
+                print('writing to file')        # Remove after debugging
+                self.writeToFile()
 
 if __name__ == '__main__':
-    scrape=F2FScraper('testFile.csv')
+    scrape=F2FScraper('KTKSample.csv')
     scrape.scrapeFile()

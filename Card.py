@@ -1,3 +1,6 @@
+import pandas as pd
+import numpy as np
+
 class Card:
     def __init__(self, name, set, price) -> None:
         self.name=name
@@ -21,4 +24,13 @@ class Card:
             List of strings containing all the attributes of the card
         """
         #return [self.name, self.set, self.condition, self.finish, str(round(self.price, 2))]
-        return [self.name, self.set, self.condition, self.finish, self.price, 2]
+        return [self.name, self.set, self.condition, self.finish, self.price]
+    
+    def exportToDf(self):
+        return pd.DataFrame([{
+            'Name':self.name,
+            'Set':self.set,
+            'Condition':self.condition,
+            'Finish':self.finish,
+            'Price':self.price
+        }])

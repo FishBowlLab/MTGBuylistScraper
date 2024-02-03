@@ -1,6 +1,5 @@
 import requests, bs4, time, os, csv, random, progressbar
 import pandas as pd
-import numpy as np
 from Card import Card
 
 class F2FScraper:
@@ -38,7 +37,6 @@ class F2FScraper:
         delay=random.randint(1500, 4500)/1000
         print('delaying:', delay, 'seconds')    # Remove after debugging
         time.sleep(delay)
-
 
     # How do I specify that cards is a list of card objects in the parameters?
     def exportData(self, cards:list[Card], mode='csv'): 

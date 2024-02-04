@@ -1,12 +1,18 @@
-import requests, bs4
+import requests, bs4, progressbar
 import pandas as pd
 from Card import Card
 from Scraper import Scraper
 
 class F2FScraper(Scraper):
     def __init__(self, setName:str, setData:pd.DataFrame) -> None:
+        """Scraper dedicated to parsing through FaceToFaceGames
+
+        Args:
+            setName (str): Name of the MTG set for scraping
+            setData (pd.DataFrame): Series containing the cleaned set of card names from the MTGJSON
+        """
         Scraper.__init__(self, setName, setData)
-        
+        self.bar=progressbar.ProgressBar(max_value=len(setData.index))
         # Using this dictionary hopefully makes things a bit easier to work with for other sites that use a different 
         # naming and tag system
         # Nested Dictionary. Is there a better way to map this like with a JSON?
@@ -24,16 +30,42 @@ class F2FScraper(Scraper):
                         }
                     }
         
-    def generate_url(self, cardName:str):
+    def generate_url(self, cardName:str)->str:
+        """Generates the query string for FaceToFaceGames
+
+        Args:
+            cardName (str): Name of the card to search for
+
+        Returns:
+            _type_: The URL for the query string for FaceToFaceGames
+        """
         cardName = cardName.lower().replace(' ','%20')
         return 'https://buylist.facetofacegames.com/search.php?search_query={}&section=product'.format(cardName)
 
-    def scrapeCard(self, cardName):
-        # generate URL
-        url=self.generate_url(cardName)
+    def cleanPrice(self, price:str)->str:
+        """Formats price element for FaceToFaceGames
+
+        Args:
+            price (str): Element containing the price of a card
+
+        Returns:
+            str: a string of the price removing all price related symbols and blank spaces
+        """
+        sym=['$', ',']
+        for char in sym:
+            price=price.replace(char, '')
+        return price.strip()
+    
+    def scrapeCard(self, cardName:str):
+        """Scrapes an individual card from FaceToFaceGames
+
+        Args:
+            cardName (str): The card name you are scraping
+        """
+    
+        url=self.generate_url(cardName) # generate URL
         res=requests.get(url)           # downloads the searched page   
-        # Returns an error if there's an issue with the response
-        res.raise_for_status()
+        res.raise_for_status()          # Returns an error if there's an issue with the response
         page=bs4.BeautifulSoup(res.text, 'html.parser')
  
         '''
@@ -49,16 +81,18 @@ class F2FScraper(Scraper):
             # TODO: Fix price scraping
             # This line needs to be adjusted so it's not scraping a range.
             # We skipped the float conversion because it was grabbing a range
-            cardPrice=card.find(self.fields['price']['tag'], {'class':self.fields['price']['class']}).text.replace('$','')  
-            self.buyList.append(Card(cardName, cardSet, cardPrice))
+            # The split and hardcoding of 1 is a workaround for the scraping range
+            cardPrice=self.cleanPrice(card.find(self.fields['price']['tag'], {'class':self.fields['price']['class']}).text.split('-')[1])
+            self.buyList.append(Card(cardName, cardSet,'FaceToFaceGames', cardPrice))
         
     def scrapeAll(self):
-        # loops the scrape card method for all cards inside the dataframe.
+        """Main method used to scrape the list of cards passed into the scraper
+        """
         try:
-            for card in self.setData['name']:
+            for card in self.setData:
                 print("Scraping", card)
-                self.scrapeCard(card)
                 self.bar.update(1)
+                self.scrapeCard(card)
                 self.delay()
         except:
             print('An error has occured. Writing previously scraped data')
@@ -68,9 +102,10 @@ class F2FScraper(Scraper):
             print("Scraping Done")
 
 if __name__ == '__main__':
+    # For Testing
     data={
         "name":["Underground Sea", "Taiga"],
     }
-    df=pd.DataFrame(data)
+    df=pd.DataFrame(data)['name']
     scrape=F2FScraper('Dual Lands', df)
     scrape.scrapeAll()

@@ -35,6 +35,7 @@ class Scraper:
         Returns:
             bool: True if set name is a valid MTG set
         """
+        #TODO: Adjust for partial matches since we can also account for foreign language cards like FBB
         return self.existingSets.isin([setName]).any().any()
     
     # How do I specify that cards is a list of card objects in the parameters?

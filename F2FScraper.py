@@ -78,10 +78,10 @@ class F2FScraper(Scraper):
             cardName=card.find(self.fields['name']['tag'], {'class':self.fields['name']['class']}).text     #re-using the card name variable
             cardSet=card.find(self.fields['set']['tag'], {'class':self.fields['set']['class']}).text
             
-            # TODO: Fix price scraping
-            # This line needs to be adjusted so it's not scraping a range.
-            # We skipped the float conversion because it was grabbing a range
-            # The split and hardcoding of 1 is a workaround for the scraping range
+            # Skips appending card if the set is not valid
+            if not self.isValidSet(cardSet):
+                continue
+            
             cardPrice=self.cleanPrice(card.find(self.fields['price']['tag'], {'class':self.fields['price']['class']}).text.split('-')[1])
             self.buyList.append(Card(cardName, cardSet,'FaceToFaceGames', cardPrice))
         

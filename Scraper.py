@@ -12,9 +12,31 @@ class Scraper:
         """
         self.setName=setName
         self.setData=setData
+        self.existingSets=self.populateExistingSets()
+        
         self.exportFileName=setName +'_buylist.csv'             # Name of file to be written
         self.buyList=[]                                         # Holds all Card objects scraped
         
+    def populateExistingSets(self)->pd.DataFrame:
+        """Creates a dataframe containing all possible MTG sets in paper
+
+        Returns:
+            pd.DataFrame: Dataframe containing the names of all MTG sets
+        """
+        df=pd.read_csv('Set Data\sets.csv')
+        return df[['name']].where(df['isOnlineOnly']==False).dropna()
+    
+    def isValidSet(self, setName:str)->bool:
+        """Checks whether the card is in a valid mtg set 
+
+        Args:
+            setName (str): Name of set intended for scraping
+
+        Returns:
+            bool: True if set name is a valid MTG set
+        """
+        return self.existingSets.isin([setName]).any().any()
+    
     # How do I specify that cards is a list of card objects in the parameters?
     def exportData(self, cards:list[Card])->pd.DataFrame: 
         """Preps list of cards into a dataframe to be processed
@@ -49,7 +71,3 @@ class Scraper:
         print('delaying:', delay, 'seconds')    # Remove after debugging
         time.sleep(delay)
     
-    def isValidSet(self, setName:str)->bool:
-        ''' Checks whether the card is in a valid mtg set since there are times we are scraping from other TCGs
-        '''
-        return False

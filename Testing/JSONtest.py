@@ -38,3 +38,14 @@ df=df.drop(df[df['supertypes'][0]=='Basic'].index)
 print(df[['name', 'type']].tail(10))
 #print(df['supertypes'])
 #print(type(df['supertypes'][0]))
+
+# Test code for searching up the df containing all the sets
+'''
+targetFalse='Alchemy 2023'
+targetTrue='Tenth Edition'
+df=pd.read_csv('Set Data\sets.csv')
+setList=df[['name']].where(df['isOnlineOnly']==False).dropna()
+#Checks if the target is in any row of any column
+print(setList.isin([targetTrue]).any().any())
+#print(df)
+'''

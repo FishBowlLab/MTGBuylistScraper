@@ -4,6 +4,7 @@ from selenium.webdriver.common.by import By
 import pandas as pd
 from Card import Card
 from Scraper import Scraper
+import bs4
 
 class Scraper401Games(Scraper):
     def __init__(self, setName: str, setData: pd.Series) -> None:
@@ -16,6 +17,20 @@ class Scraper401Games(Scraper):
         super().__init__(setName, setData)
         self.url='https://buylist.401games.ca/retailer/buylist'
         self.driver = None
+        self.fields={
+            'name':{
+                'tag':'div',
+                'class':'product-title'
+            },
+            'set': {
+                'tag':'div',
+                'class':'product-set',
+                'child': 'span',            # We need the span inside this for the set info
+            },
+            'price':{
+                'tag': 'strong'
+            }
+        }
     
     def initDriver(self):
         # Open up driver
@@ -27,18 +42,48 @@ class Scraper401Games(Scraper):
         elem.click()
         self.delay()
 
-    def searchCard(self, cardName:str):
+    def cleanPrice(self, price:str)->str:
+        return price.split('$')[1].replace(',','' )
+    
+    def searchCard(self, cardName:str)->bs4.BeautifulSoup:
+        """Uses Selenium to find the card on a REact Site and returns a Beautiful Soup object ready for html parsing
+
+        Args:
+            cardName (str): Name of card we are looking up
+
+        Returns:
+            bs4.BeautifulSoup: Beautiful Soup object for html parsing
+        """
         # Fills in the search bar with the card name
         search=self.driver.find_element(By.CLASS_NAME, 'search-text')
         search.send_keys(cardName)
         self.delay()
         search.send_keys(Keys.RETURN)
+        '''
+            TODO: Set Selenium up so that it will wait for load events before continuing with brute force
+        '''
         self.delay()
+        pageSource = self.driver.page_source   
+        search.clear()
+        self.delay() 
+        return bs4.BeautifulSoup(pageSource, 'html.parser')
         
     def scrapeCard(self, cardName:str):
-        pass
-        #self.searchCard(cardName)
-        # Select all cards 
+        page=self.searchCard(cardName)          # This feels a bit like Spaghetti code where I have a chain of things calling instead of a central method calling things
+        cardList=page.select('.buylist-product') 
+        for card in cardList:
+            
+            name=card.find(self.fields['name']['tag'], {'class':self.fields['name']['class']}).text
+            # Skips cards that have partial matches from the initial search
+            if cardName not in name:
+                continue
+            
+            print(cardName)
+            cardSet=card.find(self.fields['set']['tag'], {'class':self.fields['set']['class']}).find(self.fields['set']['child']).text
+            print(cardSet)
+            cardPrice=self.cleanPrice(card.find(self.fields['price']['tag']).text)
+            print(cardPrice)
+            self.buyList.append(Card(cardName, cardSet, '401Games', cardPrice))
     
     def scrapeAll(self):
         """Main method used to scrape the list of cards passed into the scraper
@@ -65,4 +110,4 @@ if __name__ == '__main__':
     }
     df=pd.DataFrame(data)['name']
     scrape=Scraper401Games('Dual Lands', df)
-    #scrape.scrapeAll()
+    scrape.scrapeAll()

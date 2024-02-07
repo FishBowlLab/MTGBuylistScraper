@@ -4,12 +4,12 @@ from Card import Card
 from Scraper import Scraper
 
 class F2FScraper(Scraper):
-    def __init__(self, setName:str, setData:pd.DataFrame) -> None:
-        """Scraper dedicated to parsing through FaceToFaceGames
+    def __init__(self, setName:str, setData:pd.Series) -> None:
+        """Scraper dedicated to parsing through FaceToFaceGames using a query string
 
         Args:
             setName (str): Name of the MTG set for scraping
-            setData (pd.DataFrame): Series containing the cleaned set of card names from the MTGJSON
+            setData (pd.Series): Series containing the cleaned set of card names from the MTGJSON
         """
         Scraper.__init__(self, setName, setData)
         self.bar=progressbar.ProgressBar(max_value=len(setData.index))

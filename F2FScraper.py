@@ -1,4 +1,4 @@
-import requests, bs4, progressbar
+import requests, bs4, progressbar, re
 import pandas as pd
 from Card import Card
 from Scraper import Scraper
@@ -51,10 +51,8 @@ class F2FScraper(Scraper):
         Returns:
             str: a string of the price removing all price related symbols and blank spaces
         """
-        sym=['$', ',']
-        for char in sym:
-            price=price.replace(char, '')
-        return price.strip()
+        # Someone please tell me what this regex means
+        return re.sub(r"(?:(?!\.)[\W])+", '', price)
     
     def scrapeCard(self, cardName:str):
         """Scrapes an individual card from FaceToFaceGames
@@ -75,7 +73,7 @@ class F2FScraper(Scraper):
         '''
         cardList=page.select('.product')
         for card in cardList:
-            cardName=card.find(self.fields['name']['tag'], {'class':self.fields['name']['class']}).text     #re-using the card name variable
+            cardName=card.find(self.fields['name']['tag'], {'class':self.fields['name']['class']}).text.strip()     #re-using the card name variable
             cardSet=card.find(self.fields['set']['tag'], {'class':self.fields['set']['class']}).text
             
             # Skips appending card if the set is not valid

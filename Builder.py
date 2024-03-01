@@ -1,5 +1,6 @@
 from CardData import CardData
 from F2FScraper import F2FScraper
+from Scraper401Games import Scraper401Games
 
 class Builder:
     def __init__(self, fileName:str) -> None:
@@ -10,7 +11,7 @@ class Builder:
         """
         self.fileName=fileName
         self.setData=CardData(fileName).cardNames()     
-        self.validSources=['F2F']       # List of sites that the scraper is capable of checking
+        self.validSources=['F2F', '401Games']       # List of sites that the scraper is capable of checking
         # Card list needs to be defined outside to be reused
         
     def removeDuplicates(self):
@@ -36,8 +37,10 @@ class Builder:
         # Add validation step here for valid sources as we build
         if source=="F2F":
             scrape=F2FScraper(setName, self.setData)        #Scraper might be expecting a df instead of a series
-            scrape.scrapeAll()
+        if source=='401Games':
+            scrape=Scraper401Games(setName, self.setData)
+        scrape.scrapeAll()
         
 if __name__ == '__main__':
     build=Builder('KTK.json')
-    build.scrape('F2F')
+    build.scrape('401Games')

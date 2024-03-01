@@ -1,10 +1,12 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
-import pandas as pd
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from Card import Card
 from Scraper import Scraper
-import bs4
+import pandas as pd
+import bs4, math
 
 class Scraper401Games(Scraper):
     def __init__(self, setName: str, setData: pd.Series) -> None:
@@ -31,6 +33,8 @@ class Scraper401Games(Scraper):
                 'tag': 'strong'
             }
         }
+        # Limits selenium to scrape 40 times per iteration
+        self.scrapeLimit=40
     
     def initDriver(self):
         # Open up driver
@@ -38,10 +42,27 @@ class Scraper401Games(Scraper):
         self.driver.get(self.url)
         self.delay()
         # Get access to the search screen for the buylist
-        elem = self.driver.find_element(By.XPATH,  "//*[contains(@src, 'Magic-the-Gathering')]").find_element(By.XPATH, '..')
+        elem=WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "//*[contains(@src, 'Magic-the-Gathering')]"))
+        )
+        elem=self.driver.find_element(By.XPATH, "//*[contains(@src, 'Magic-the-Gathering')]").find_element(By.XPATH, '..')
         elem.click()
         self.delay()
 
+    def closeDriver(self):
+        DISCONNECTED_MSG = 'Unable to evaluate script: disconnected: not connected to DevTools\n'
+        if self.driver.get_log('driver')[-1]['message'] == DISCONNECTED_MSG:
+            print("Driver has been closed")
+        else:
+            self.driver.close()
+
+    def setScrapeLimit(self, limit)->None:
+        self.scrapeLimit=limit
+
+    def cleanName(self, name:str)->str:
+        # This is very very hard coded. Consider a more elegant solution later
+        return name.split('(')[0].strip()
+    
     def cleanPrice(self, price:str)->str:
         return price.split('$')[1].replace(',','' )
     
@@ -54,50 +75,68 @@ class Scraper401Games(Scraper):
         Returns:
             bs4.BeautifulSoup: Beautiful Soup object for html parsing
         """
-        # Fills in the search bar with the card name
-        search=self.driver.find_element(By.CLASS_NAME, 'search-text')
-        search.send_keys(cardName)
-        self.delay()
-        search.send_keys(Keys.RETURN)
-        '''
-            TODO: Set Selenium up so that it will wait for load events before continuing with brute force
-        '''
-        self.delay()
-        pageSource = self.driver.page_source   
-        search.clear()
-        self.delay() 
-        return bs4.BeautifulSoup(pageSource, 'html.parser')
+        try:
+            # Fills in the search bar with the card name
+            search=WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, "search-text"))
+            )
+            search.clear()
+            search.send_keys(cardName)
+            self.delay()
+            search.send_keys(Keys.RETURN)
+            WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, "buylist-product"))
+            )
+        except:
+            # Probably create a log file for this
+            print("An error has occured while scraping", cardName)
+        finally:
+            #self.delay()       # Unclear whether this delay is necessary
+            pageSource = self.driver.page_source   
+            search.clear()
+            return bs4.BeautifulSoup(pageSource, 'html.parser')
         
     def scrapeCard(self, cardName:str):
         page=self.searchCard(cardName)          # This feels a bit like Spaghetti code where I have a chain of things calling instead of a central method calling things
+
         cardList=page.select('.buylist-product') 
         for card in cardList:
             
             name=card.find(self.fields['name']['tag'], {'class':self.fields['name']['class']}).text
+            cardSet=card.find(self.fields['set']['tag'], {'class':self.fields['set']['class']}).find(self.fields['set']['child']).text
             # Skips cards that have partial matches from the initial search
-            if cardName not in name:
+            if cardName not in name or not self.isValidSet(cardSet):
                 continue
             
-            print(cardName)
-            cardSet=card.find(self.fields['set']['tag'], {'class':self.fields['set']['class']}).find(self.fields['set']['child']).text
-            print(cardSet)
             cardPrice=self.cleanPrice(card.find(self.fields['price']['tag']).text)
-            print(cardPrice)
-            self.buyList.append(Card(cardName, cardSet, '401Games', cardPrice))
+            self.buyList.append(Card(self.cleanName(name), cardSet, '401Games', cardPrice))
     
     def scrapeAll(self):
         """Main method used to scrape the list of cards passed into the scraper
         """
-        self.initDriver()
+        itter=math.ceil(len(self.setData.index)/self.scrapeLimit)
+        #self.initDriver()
         try:
-            for card in self.setData:
-                print("Scraping", card)
-                self.scrapeCard(card)
-                self.delay()
+            # scrape in partitions based on the scrapeLimit
+            #for i in range(itter):
+            for i in range(1,2):
+                self.initDriver()
+                # This is a sloppy way of calculating the partitions we want to run the scraper
+                startPt=self.scrapeLimit*i
+                endPt=startPt+self.scrapeLimit
+                # This accounts for the last iteration where we go out of bounds of the dataframe
+                if endPt>len(self.setData.index):
+                    endPt=len(self.setData.index)
+                    
+                for card in self.setData.iloc[startPt:endPt]:
+                    print("Scraping", card)
+                    self.scrapeCard(card)
+                self.driver.close()
+                #self.closeDriver()
         except:
-            print('An error has occured. Writing previously scraped data')
+            print('An error has occured on {card}. Writing previously scraped data'.format(card))
         finally:
-            self.driver.close()                # Should this be in its own method? Especially since the init is in its own method
+            #self.closeDriver()                # Should this be in its own method? Especially since the init is in its own method
             print('writing to file...')        # Remove after debugging
             self.writeToFile()
             print("Scraping Done")

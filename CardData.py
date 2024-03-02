@@ -16,7 +16,7 @@ class CardData:
             pd.Series: A series containing only the names of the cards passed by the MTGJSON
         """
         rawData=pd.DataFrame(pd.read_json('Set Data/{}'.format(self.fileName), orient='index').iloc[1]['cards'])
-        rawData=self.removeBasics(rawData)
+        rawData=self.removeDuplicates(self.removeBasics(rawData))
         # Add additional cleaning methods here as necessary
         
         return rawData['name']
@@ -31,10 +31,12 @@ class CardData:
             pd.DataFrame: Dataframe without the basic lands in the list
         """
         basic_lands=['Plains', 'Swamp', 'Forest', 'Mountain', 'Island']
-        # There has to be a faster way of doing this rather than iterating across the df for each basic and redefining the df
-        for land in basic_lands:
-            rawData=rawData.drop(rawData[rawData['name']==land].index)  
-        return rawData      
+        # Slices the dataframe and drops all elements with names that are within the basic lands list
+        return rawData[~rawData['name'].isin(basic_lands)]      
+    
+    def removeDuplicates(self, rawData:pd.DataFrame)->pd.DataFrame:
+        return rawData.drop_duplicates(subset='name')
     
 if __name__=='__main__':
     data=CardData('KTK.json')
+    print(data.cardNames())

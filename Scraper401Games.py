@@ -118,8 +118,7 @@ class Scraper401Games(Scraper):
         #self.initDriver()
         try:
             # scrape in partitions based on the scrapeLimit
-            #for i in range(itter):
-            for i in range(1,2):
+            for i in range(itter):
                 self.initDriver()
                 # This is a sloppy way of calculating the partitions we want to run the scraper
                 startPt=self.scrapeLimit*i
@@ -137,6 +136,11 @@ class Scraper401Games(Scraper):
             print('An error has occured on {card}. Writing previously scraped data'.format(card))
         finally:
             #self.closeDriver()                # Should this be in its own method? Especially since the init is in its own method
+            try:
+                self.driver.close()
+            except:
+                print('Driver has already been closed')
+                
             print('writing to file...')        # Remove after debugging
             self.writeToFile()
             print("Scraping Done")

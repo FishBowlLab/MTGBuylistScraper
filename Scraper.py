@@ -1,6 +1,5 @@
 import time, random, os
 import pandas as pd
-from Card import Card
 
 class Scraper:
     def __init__(self,setName:str, setData:pd.Series) -> None:
@@ -14,8 +13,8 @@ class Scraper:
         self.setData=setData
         self.existingSets=self.populateExistingSets()
         
-        self.exportFileName=setName +'_buylist.csv'             # Name of file to be written
-        self.buyList=[]                                         # Holds all Card objects scraped
+        self.exportFileName=setName +'_buylist.csv'                                 # Name of file to be written
+        self.buyList=[]                                                             # Holds all Card objects scraped
         
     def populateExistingSets(self)->pd.DataFrame:
         """Creates a dataframe containing all possible MTG sets in paper
@@ -38,8 +37,11 @@ class Scraper:
         #TODO: Adjust for partial matches since we can also account for foreign language cards like FBB
         return self.existingSets.isin([setName]).any().any()
     
+    def addToBuyList(self, name:str, set:str, source:str, price:str, condition:str="NM", finish:str="non-foil")->None:
+        self.buyList.append([name, set, condition, finish, source, price])
+    
     # How do I specify that cards is a list of card objects in the parameters?
-    def exportData(self, cards:list[Card])->pd.DataFrame: 
+    def exportData(self)->pd.DataFrame: 
         """Preps list of cards into a dataframe to be processed
 
         Args:
@@ -49,21 +51,29 @@ class Scraper:
             pd.DataFrame: Dataframe containing all buylist information
         """
         header=['Name', 'Set', 'Condition', 'Finish', 'Source', 'Price']
-        df=pd.DataFrame(columns=header)
-        for card in cards:
-            df=pd.concat([df, card.exportToDf()], ignore_index=True)        # This looks like a really space inefficient way of appending
-        return df
+        return pd.DataFrame(self.buyList, columns=header).drop_duplicates()
       
-    def writeToFile(self):
-        """Writes lines of the buylist cards into a csv file
+    def writeToFile(self, mode='csv'):
+        """Writes lines of the buylist cards into a file
+
+        Args:
+            mode (str, optional): Writes data into a file on the local drive. Modes include csv or update. Defaults to 'csv'.
         """
-        lines=self.exportData(self.buyList)      #This doesn't exist right now
-        exists=os.path.isfile(self.exportFileName)
-        writingMode='a'
-        if not exists:
-            writingMode='w'
-            exists=not exists
-        lines.to_csv(self.exportFileName, mode=writingMode, header=exists, index=False)
+        '''
+            Debating between upsert and batch
+            Refer to the video: https://www.youtube.com/watch?v=2QhPLcYLay8&ab_channel=LaravelDaily
+        '''
+        if mode=='csv':
+            lines=self.exportData()      
+            exists=os.path.isfile(self.exportFileName)
+            writingMode='a'
+            if not exists:
+                writingMode='w'
+                exists=not exists
+            lines.to_csv(self.exportFileName, mode=writingMode, header=(not exists), index=False)
+            
+        if mode=='update':
+            pass
         
     def delay(self):
         """Sleep function to prevent overloading the site with requests. Delay range is between 1.5-4.5 seconds

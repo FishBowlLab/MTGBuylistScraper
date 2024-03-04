@@ -3,10 +3,10 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from Card import Card
 from Scraper import Scraper
 import pandas as pd
 import bs4, math
+#import progressbar
 
 class Scraper401Games(Scraper):
     def __init__(self, setName: str, setData: pd.Series) -> None:
@@ -35,6 +35,7 @@ class Scraper401Games(Scraper):
         }
         # Limits selenium to scrape 40 times per iteration
         self.scrapeLimit=40
+        #self.bar=progressbar.ProgressBar(max_value=len(setData.index))
     
     def initDriver(self):
         # Open up driver
@@ -104,12 +105,15 @@ class Scraper401Games(Scraper):
             
             name=card.find(self.fields['name']['tag'], {'class':self.fields['name']['class']}).text
             cardSet=card.find(self.fields['set']['tag'], {'class':self.fields['set']['class']}).find(self.fields['set']['child']).text
+            cardFinish='non-foil'
             # Skips cards that have partial matches from the initial search
             if cardName not in name or not self.isValidSet(cardSet):
                 continue
-            
+            if '(Foil)' in name:
+                cardFinish='foil'
+                    
             cardPrice=self.cleanPrice(card.find(self.fields['price']['tag']).text)
-            self.buyList.append(Card(self.cleanName(name), cardSet, '401Games', cardPrice))
+            self.addToBuyList(self.cleanName(name), cardSet, '401Games', cardPrice, finish=cardFinish)
     
     def scrapeAll(self):
         """Main method used to scrape the list of cards passed into the scraper
@@ -129,6 +133,7 @@ class Scraper401Games(Scraper):
                     
                 for card in self.setData.iloc[startPt:endPt]:
                     print("Scraping", card)
+                    #self.bar.update(1)
                     self.scrapeCard(card)
                 self.driver.close()
                 #self.closeDriver()

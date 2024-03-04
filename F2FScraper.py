@@ -1,6 +1,5 @@
 import requests, bs4, progressbar, re
 import pandas as pd
-from Card import Card
 from Scraper import Scraper
 
 class F2FScraper(Scraper):
@@ -81,19 +80,22 @@ class F2FScraper(Scraper):
                 continue
             
             cardPrice=self.cleanPrice(card.find(self.fields['price']['tag'], {'class':self.fields['price']['class']}).text.split('-')[1])
-            self.buyList.append(Card(cardName, cardSet,'FaceToFaceGames', cardPrice))
+            self.addToBuyList(cardName, cardSet,'FaceToFaceGames', cardPrice)
         
     def scrapeAll(self):
         """Main method used to scrape the list of cards passed into the scraper
         """
         try:
             for card in self.setData:
-                print("Scraping", card)
-                self.bar.update(1)
-                self.scrapeCard(card)
-                self.delay()
-        except:
-            print('An error has occured. Writing previously scraped data')
+                try:
+                    print("Scraping:", card)
+                    self.bar.update(1)
+                    self.scrapeCard(card)
+                    self.delay()
+                except Exception as error:
+                     print("An exception occurred:", type(error).__name__)
+        except:                                # Not sure if this is necesssary anymore
+            print("An error has occurred")
         finally:
             print('writing to file...')        # Remove after debugging
             self.writeToFile()

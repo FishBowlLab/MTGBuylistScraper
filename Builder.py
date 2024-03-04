@@ -47,5 +47,6 @@ class Builder:
         
 if __name__ == '__main__':
     build=Builder('3ED.json')
-    build.scrape('F2F')
-    #build.scrapeAll()    
+    #build.scrape('F2F')
+    #build.scrape('401Games')
+    build.scrapeAll()    

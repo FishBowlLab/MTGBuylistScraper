@@ -15,7 +15,7 @@ class Card:
         self.name=name
         self.set=set
         self.condition=condition           # NM/SP/HP
-        self.finish=finish                 # foil/regular/special printing
+        self.finish=finish                 # foil/non-foil/special printing
         self.source=source
         self.price=price
     
@@ -29,6 +29,7 @@ class Card:
             Card Price: {price}
             '''.format(name=self.name, set=self.set, price=self.price)
         )
+        
     def export(self)->list:
         """ Preps data to be exported to file
 

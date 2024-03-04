@@ -1,4 +1,5 @@
 import pandas as pd
+import math
 
 '''
 import json
@@ -30,14 +31,18 @@ for land in basic_lands:
 
 '''
 # https://saturncloud.io/blog/how-to-remove-rows-with-specific-values-in-pandas-dataframe/#:~:text=Another%20method%20to%20remove%20rows,value%20we%20want%20to%20remove.
-df=df.drop(df[df['supertypes'][0]=='Basic'].index)
+#df=df.drop(df[df['supertypes'][0]=='Basic'].index)
 
 #for col in df.columns:
 #    print(col)
 #print(df['name'].tail(10))
-print(df[['name', 'type']].tail(10))
+#print(df[['name', 'type']].tail(10))
 #print(df['supertypes'])
 #print(type(df['supertypes'][0]))
+
+#print(df['name'].iloc[0:40])
+print(len(df.index))
+print(math.ceil(len(df.index)/40))
 
 # Test code for searching up the df containing all the sets
 '''

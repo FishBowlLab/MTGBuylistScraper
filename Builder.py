@@ -40,7 +40,12 @@ class Builder:
         if source=='401Games':
             scrape=Scraper401Games(setName, self.setData)
         scrape.scrapeAll()
+    
+    def scrapeAll(self):
+        for store in self.validSources:
+            self.scrape(store)
         
 if __name__ == '__main__':
-    build=Builder('KTK.json')
-    build.scrape('401Games')
+    build=Builder('3ED.json')
+    build.scrape('F2F')
+    #build.scrapeAll()    

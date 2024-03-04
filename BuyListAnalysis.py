@@ -15,6 +15,7 @@ class BuyListAnalysis:
     
     # TODO: Figure out this method is going to access the DB 
     def fetchStore(self, source:str)->pd.DataFrame:
+        # This is probably where it selects which data to grab from
         return self.buylist.merge(source, on=['Name', 'Set'], how='left')
     
     def fetchAllBuylists(self, sources:list[str]):

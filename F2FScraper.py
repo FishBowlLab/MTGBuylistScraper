@@ -82,7 +82,7 @@ class F2FScraper(Scraper):
             cardPrice=self.cleanPrice(card.find(self.fields['price']['tag'], {'class':self.fields['price']['class']}).text.split('-')[1])
             self.addToBuyList(cardName, cardSet,'FaceToFaceGames', cardPrice)
         
-    def scrapeAll(self):
+    def scrapeAll(self, exportTo='csv'):
         """Main method used to scrape the list of cards passed into the scraper
         """
         try:
@@ -98,7 +98,7 @@ class F2FScraper(Scraper):
             print("An error has occurred")
         finally:
             print('writing to file...')        # Remove after debugging
-            self.writeToFile()
+            self.writeToFile(exportTo)
             print("Scraping Done")
 
 if __name__ == '__main__':
@@ -108,4 +108,4 @@ if __name__ == '__main__':
     }
     df=pd.DataFrame(data)['name']
     scrape=F2FScraper('Dual Lands', df)
-    scrape.scrapeAll()
+    scrape.scrapeAll('db')

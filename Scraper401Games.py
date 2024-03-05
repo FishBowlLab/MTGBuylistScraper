@@ -115,7 +115,7 @@ class Scraper401Games(Scraper):
             cardPrice=self.cleanPrice(card.find(self.fields['price']['tag']).text)
             self.addToBuyList(self.cleanName(name), cardSet, '401Games', cardPrice, finish=cardFinish)
     
-    def scrapeAll(self):
+    def scrapeAll(self, exportTo='csv'):
         """Main method used to scrape the list of cards passed into the scraper
         """
         itter=math.ceil(len(self.setData.index)/self.scrapeLimit)
@@ -147,7 +147,7 @@ class Scraper401Games(Scraper):
                 print('Driver has already been closed')
                 
             print('writing to file...')        # Remove after debugging
-            self.writeToFile()
+            self.writeToFile(exportTo)
             print("Scraping Done")
 
 

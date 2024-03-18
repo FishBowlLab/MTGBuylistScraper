@@ -8,7 +8,10 @@ def formatToIntPHPArray(value, key):
     return '"{key}"=>{value}'.format(key=key, value=value)
 
 def writePHPArray(df:pd.DataFrame):
-    return str(df.values.tolist())
+    # First replace removes the leading '"
+    # Second replace removes "'
+    # Third replace fixes the formating on prices
+    return str(df.values.tolist()).replace("\'\"", "\"").replace("\"\'", "\"").replace("']", "]")
 
 cards='Dual Lands_buylist_401.csv'
 df=pd.read_csv(cards)
@@ -27,7 +30,7 @@ with open(template, 'r') as file:
 target='$cards =[];'
 for i in range(len(data)):
     if target in data[i]:
-        data[i]='$cards={arr};'.format(arr=writePHPArray(df))
+        data[i]='\t\t$cards ={arr};\n'.format(arr=writePHPArray(df))
 
 with open(template, 'w') as file:
     file.writelines(data)

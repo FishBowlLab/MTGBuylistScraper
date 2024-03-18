@@ -71,7 +71,10 @@ class Scraper:
                 df[col]=df[col].apply(self.formatToIntPHPArray, args=(col,))
             else:        
                 df[col]=df[col].apply(self.formatToStrPHPArray, args=(col,))
-        return str(df.values.tolist())
+        # First replace removes the leading '"
+        # Second replace removes "'
+        # Third replace fixes the formating on prices
+        return str(df.values.tolist()).replace("\'\"", "\"").replace("\"\'", "\"").replace("']", "]")
         
     def writeToFile(self, mode='csv')->None:
         """Writes lines of the buylist cards into a file
@@ -100,7 +103,7 @@ class Scraper:
             for i in range(len(data)):
                  # Search for line to replace
                 if self.targetStr in data[i]:
-                    data[i]='\t\t$cards={arr};\n'.format(arr=self.convertToPHPArray(lines))
+                    data[i]='\t\t$cards ={arr};\n'.format(arr=self.convertToPHPArray(lines))
 
             with open(self.uploadTemplate, 'w') as file:
                 file.writelines(data)

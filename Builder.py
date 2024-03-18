@@ -21,11 +21,12 @@ class Builder:
         '''
         pass
         
-    def scrape(self, source:str)->None:
+    def scrape(self, source:str, mode)->None:
         """Scrapes all cards from the setData from the specified source
 
         Args:
             source (str): Name of site's buylist to be scraped
+            mode (str): Writes data into a file on the local drive. Modes include csv or db.
         """
         setName=self.fileName.split('.')[0]                 # removes the extension from the JSON for cleaner naming
         '''
@@ -36,17 +37,17 @@ class Builder:
         '''
         # Add validation step here for valid sources as we build
         if source=="F2F":
-            scrape=F2FScraper(setName, self.setData)        #Scraper might be expecting a df instead of a series
+            scrape=F2FScraper(setName, self.setData, mode)        #Scraper might be expecting a df instead of a series
         if source=='401Games':
-            scrape=Scraper401Games(setName, self.setData)
+            scrape=Scraper401Games(setName, self.setData, mode)
         scrape.scrapeAll()
     
-    def scrapeAll(self):
+    def scrapeAll(self, mode):
         for store in self.validSources:
-            self.scrape(store)
+            self.scrape(store, mode)
         
 if __name__ == '__main__':
-    build=Builder('3ED.json')
-    #build.scrape('F2F')
-    #build.scrape('401Games')
-    build.scrapeAll()    
+    build=Builder('KTK.json')
+    #build.scrape('F2F', mode='db')
+    build.scrape('401Games', mode='db')
+    #build.scrapeAll(mode='db')    

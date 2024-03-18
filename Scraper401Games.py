@@ -9,14 +9,15 @@ import bs4, math
 #import progressbar
 
 class Scraper401Games(Scraper):
-    def __init__(self, setName: str, setData: pd.Series) -> None:
+    def __init__(self, setName: str, setData: pd.Series, mode) -> None:
         """Scraper targeted for sites built with React that require Selenium to scrape since items are fetched using JS
 
         Args:
             setName (str): Name of the MTG set for scraping
             setData (pd.Series): Series containing the cleaned set of card names from the MTGJSON
+            mode (str): Writes data into a file on the local drive. Modes include csv or db.
         """
-        super().__init__(setName, setData)
+        super().__init__(setName, setData, mode)
         self.url='https://buylist.401games.ca/retailer/buylist'
         self.driver = None
         self.fields={
@@ -115,7 +116,7 @@ class Scraper401Games(Scraper):
             cardPrice=self.cleanPrice(card.find(self.fields['price']['tag']).text)
             self.addToBuyList(self.cleanName(name), cardSet, '401Games', cardPrice, finish=cardFinish)
     
-    def scrapeAll(self, exportTo='csv'):
+    def scrapeAll(self):
         """Main method used to scrape the list of cards passed into the scraper
         """
         itter=math.ceil(len(self.setData.index)/self.scrapeLimit)
@@ -147,7 +148,7 @@ class Scraper401Games(Scraper):
                 print('Driver has already been closed')
                 
             print('writing to file...')        # Remove after debugging
-            self.writeToFile(exportTo)
+            self.writeToFile()
             print("Scraping Done")
 
 
@@ -157,5 +158,5 @@ if __name__ == '__main__':
         "name":["Underground Sea", "Taiga"],
     }
     df=pd.DataFrame(data)['name']
-    scrape=Scraper401Games('Dual Lands', df)
+    scrape=Scraper401Games('Dual Lands', df, mode='db')
     scrape.scrapeAll()

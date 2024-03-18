@@ -1,20 +1,24 @@
-import time, random, os
+import time, random, os, datetime
 import pandas as pd
+from unidecode import unidecode
 
 class Scraper:
-    def __init__(self,setName:str, setData:pd.Series) -> None:
+    def __init__(self, setName:str, setData:pd.Series, mode) -> None:
         """Parent object of scrapers. Handles all file reading and writing
 
         Args:
             setName (str): Name of the set intending to be scraped
             setData (pd.Series): A series containing the names of the cards for scraping
+            mode (str): Writes data into a file on the local drive. Modes include csv or db.
         """
         self.setName=setName
         self.setData=setData
         self.existingSets=self.populateExistingSets()
+        self.mode=mode
         
         self.exportFileName=setName +'_buylist.csv'                                 # Name of file to be written
         self.uploadTemplate='CardSeeder.php'
+        self.uploadBackup='CardSeederBackup.php'
         self.targetStr='$cards =[];'
         self.buyList=[]                                                             # Holds all Card objects scraped
         
@@ -40,7 +44,7 @@ class Scraper:
         return self.existingSets.isin([setName]).any().any()
     
     def addToBuyList(self, name:str, set:str, source:str, price:str, condition:str="NM", finish:str="non-foil")->None:
-        self.buyList.append([name, set, condition, finish, source, price])
+        self.buyList.append([unidecode(name), unidecode(set), condition, finish, source, price])
     
     # How do I specify that cards is a list of card objects in the parameters?
     def exportToDf(self)->pd.DataFrame: 
@@ -55,8 +59,9 @@ class Scraper:
         header=['Name', 'Set', 'Condition', 'Finish', 'Source', 'Price']
         return pd.DataFrame(self.buyList, columns=header).drop_duplicates()
     
-    def setDBFile(self, file:str, targetStr:str)->None:
+    def setDBFiles(self, file:str, backup:str, targetStr:str)->None:
         self.uploadTemplate=file
+        self.uploadBackup=backup
         self.targetStr=targetStr
     
     def formatToStrPHPArray(self, value:str, key:str)->str:
@@ -76,18 +81,16 @@ class Scraper:
         # Third replace fixes the formating on prices
         return str(df.values.tolist()).replace("\'\"", "\"").replace("\"\'", "\"").replace("']", "]")
         
-    def writeToFile(self, mode='csv')->None:
+    def writeToFile(self)->None:
         """Writes lines of the buylist cards into a file
-
-        Args:
-            mode (str, optional): Writes data into a file on the local drive. Modes include csv or db. Defaults to 'csv'.
         """
         '''
             Debating between upsert and batch
             Refer to the video: https://www.youtube.com/watch?v=2QhPLcYLay8&ab_channel=LaravelDaily
         '''
         lines=self.exportToDf()
-        if mode=='csv':
+        if self.mode=='csv':
+            print('Writing to', self.exportFileName)
             if os.path.isfile(self.exportFileName):
                 writingMode='a'
                 includeHead=False
@@ -96,10 +99,30 @@ class Scraper:
                 includeHead=True
             lines.to_csv(self.exportFileName, mode=writingMode, header=includeHead, index=False)
             
-        if mode=='db':
+        if self.mode=='db':
+            print('Writing to', self.uploadTemplate)
+            copyBackup=True
+            
+            # Read the DB seeding file
             with open(self.uploadTemplate, 'r') as file:
                 data=file.readlines()
-
+                
+            # Search for whether the file has been written in
+            for i in range(len(data)):
+                 # Search for whether the target string has been replaced yet
+                if self.targetStr in data[i]:
+                    copyBackup=False
+                    break
+                    
+            # In the case where we were unable to find the target string
+            if copyBackup==True:
+                # Rename current upload template
+                os.rename(self.uploadTemplate, self.setName+"_"+str(datetime.datetime.now()).split()[0]+"_"+self.uploadTemplate)
+                # Replace data with a copy of the backup to write data into
+                with open(self.uploadBackup, 'r') as file:
+                    data=file.readlines()
+            
+            # Searches for location and writes the data into 
             for i in range(len(data)):
                  # Search for line to replace
                 if self.targetStr in data[i]:

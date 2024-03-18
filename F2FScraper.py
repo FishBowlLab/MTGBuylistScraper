@@ -3,15 +3,16 @@ import pandas as pd
 from Scraper import Scraper
 
 class F2FScraper(Scraper):
-    def __init__(self, setName:str, setData:pd.Series) -> None:
+    def __init__(self, setName:str, setData:pd.Series, mode:str) -> None:
         """Scraper dedicated to parsing through FaceToFaceGames using a query string
 
         Args:
             setName (str): Name of the MTG set for scraping
             setData (pd.Series): Series containing the cleaned set of card names from the MTGJSON
+            mode (str): Writes data into a file on the local drive. Modes include csv or db.
         """
-        Scraper.__init__(self, setName, setData)
-        self.bar=progressbar.ProgressBar(max_value=len(setData.index))
+        Scraper.__init__(self, setName, setData, mode)
+        self.bar=progressbar.ProgressBar(max_value=len(setData))
         # Using this dictionary hopefully makes things a bit easier to work with for other sites that use a different 
         # naming and tag system
         # Nested Dictionary. Is there a better way to map this like with a JSON?
@@ -82,7 +83,7 @@ class F2FScraper(Scraper):
             cardPrice=self.cleanPrice(card.find(self.fields['price']['tag'], {'class':self.fields['price']['class']}).text.split('-')[1])
             self.addToBuyList(cardName, cardSet,'FaceToFaceGames', cardPrice)
         
-    def scrapeAll(self, exportTo='csv'):
+    def scrapeAll(self):
         """Main method used to scrape the list of cards passed into the scraper
         """
         try:
@@ -98,7 +99,7 @@ class F2FScraper(Scraper):
             print("An error has occurred")
         finally:
             print('writing to file...')        # Remove after debugging
-            self.writeToFile(exportTo)
+            self.writeToFile()
             print("Scraping Done")
 
 if __name__ == '__main__':
@@ -107,5 +108,5 @@ if __name__ == '__main__':
         "name":["Underground Sea", "Taiga"],
     }
     df=pd.DataFrame(data)['name']
-    scrape=F2FScraper('Dual Lands', df)
-    scrape.scrapeAll('db')
+    scrape=F2FScraper('Dual Lands', df, mode='db')
+    scrape.scrapeAll()

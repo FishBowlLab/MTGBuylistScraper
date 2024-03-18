@@ -16,7 +16,7 @@ class CardSeeder extends Seeder
     public function run()
     {
         // Empty array that will be targeted by python script
-		$cards =[];
+        $cards =[];
         foreach($cards as $card){
             DB::table('cards')->insert($card);
         }
